@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../context';
 import { Calendar, Users, Trophy, Search, Sliders, ShieldCheck, Gamepad2 } from 'lucide-react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Tournament, GameType, TournamentStatus } from '../types';
 import { RootStackParamList } from '../types/navigation';
 import { Modal, View, Text, TouchableOpacity, TextInput, FlatList, Image, StyleSheet, ScrollView } from 'react-native';
@@ -98,7 +99,7 @@ interface TournamentCardProps {
 }
 
 const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, style }) => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, getParticipantProfile } = useAppStore();
   
   const isRegistered = useMemo(() => 
@@ -111,7 +112,7 @@ const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, style }) =>
 
   return (
     <TouchableOpacity
-      onPress={() => navigation.navigate('TournamentDetails' as any, { id: tournament.id })}
+      onPress={() => navigation.navigate('TournamentDetails', { id: tournament.id })}
       style={[styles.card, style]}
       activeOpacity={0.85}
     >
@@ -227,7 +228,7 @@ const GameLoadingScreen = ({ progress, loadingText }: { progress: number, loadin
 
 export default function Dashboard() {
   const { tournaments, isLoading, user, signOut } = useAppStore();
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [gameFilter, setGameFilter] = useState<string>('All');
@@ -304,7 +305,7 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
-      <BlurHeader title="Discover Tournaments" right={<TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Notifications' as any)}><Text style={{color:'#fff'}}>🔔</Text></TouchableOpacity>} />
+      <BlurHeader title="Discover Tournaments" right={<TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Notifications')}><Text style={{color:'#fff'}}>🔔</Text></TouchableOpacity>} />
       
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Header & Search */}
@@ -336,7 +337,7 @@ export default function Dashboard() {
             {/* User area */}
             { !user ? (
               <TouchableOpacity 
-                onPress={() => navigation.navigate('Auth' as any)} 
+                onPress={() => navigation.navigate('Auth')} 
                 activeOpacity={0.85} 
                 style={{ paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#7c3aed', borderRadius: 8 }}
               >
@@ -359,7 +360,7 @@ export default function Dashboard() {
                     activeOpacity={0.85}
                   >
                     <View style={{backgroundColor:'#0b1220',padding:16,borderRadius:12,minWidth:200}}>
-                      <TouchableOpacity onPress={() => { setShowAccountMenu(false); navigation.navigate('Profile' as any); }} activeOpacity={0.85} style={{paddingVertical:8}}>
+                      <TouchableOpacity onPress={() => { setShowAccountMenu(false); navigation.navigate('Home', { screen: 'Profile' }); }} activeOpacity={0.85} style={{paddingVertical:8}}>
                         <Text style={{color:'#fff'}}>Profile</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => { setShowAccountMenu(false); signOut(); }} activeOpacity={0.85} style={{paddingVertical:8}}>
@@ -405,8 +406,8 @@ export default function Dashboard() {
 
         {/* FEATURED TOURNAMENT */}
         {!searchQuery && !showFilters && featuredTournament ? (
-          <TouchableOpacity
-              onPress={() => navigation.navigate('TournamentDetails' as any, { id: featuredTournament.id })}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('TournamentDetails', { id: featuredTournament.id })}
               activeOpacity={0.85}
               style={{ marginHorizontal: 16, marginBottom: 32, backgroundColor: '#7c3aed', borderRadius: 24, overflow: 'hidden' }}
           >

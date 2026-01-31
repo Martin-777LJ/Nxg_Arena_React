@@ -41,7 +41,7 @@ export default function Auth() {
         if (result.error) {
             setError(result.error.message);
         } else if (mode !== 'phone' || (mode === 'phone' && otpSent)) {
-            navigation.navigate('Dashboard' as any);
+          navigation.navigate('Home');
         }
     } catch (err: any) {
         setError('Connection interrupted. Try again.');
@@ -53,7 +53,7 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     try {
         await signInWithGoogle();
-        navigation.navigate('Dashboard' as any);
+      navigation.navigate('Home');
     } catch (err) {
         setError('Google authentication failed.');
     }
