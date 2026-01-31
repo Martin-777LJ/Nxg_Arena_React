@@ -102,7 +102,9 @@ const NativeCard: React.FC<NativeCardProps> = ({
 
 export default NativeCard;
 import React, { useState, useMemo } from 'react';
-import * as ReactRouterDOM from 'react-router-dom';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { Alert, FlatList, ScrollView, TouchableOpacity, Text } from 'react-native';
+import BlurHeader from '../components/BlurHeader';
 import { useAppStore } from '../context';
 import { 
     Calendar, Users, Trophy, ScrollText, DollarSign, ChevronLeft, 
@@ -115,7 +117,8 @@ import {
 import { format } from 'date-fns';
 import { Match, User, TournamentGame } from '../types';
 
-const { useParams, Link, useNavigate } = ReactRouterDOM;
+// replaced react-router usage with react-navigation
+
 
 // --- SUB-COMPONENTS ---
 
@@ -123,52 +126,52 @@ const BracketPlayer: React.FC<{ player: { id: string, name: string, avatarUrl?: 
     const isWinner = winnerId === player.id;
     const isLoser = winnerId && winnerId !== player.id;
     const isTBD = player.id === 'tbd';
-    
+
     return (
-        <div className={`flex items-center justify-between p-2.5 rounded-lg transition-colors group/player ${isWinner ? 'bg-emerald-500/5' : isTBD ? 'opacity-50' : 'hover:bg-slate-800'}`}>
-            <div className="flex items-center space-x-3 overflow-hidden">
-                <div className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-xs font-bold border transition-colors overflow-hidden ${
+        <View className={`flex-row items-center justify-between p-2.5 rounded-lg transition-colors ${isWinner ? 'bg-emerald-500/5' : isTBD ? 'opacity-50' : 'hover:bg-slate-800'}`}>
+            <View className="flex-row items-center space-x-3 overflow-hidden">
+                <View className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-xs font-bold border transition-colors overflow-hidden ${
                     isWinner ? 'bg-emerald-500 text-black border-emerald-400' : 
                     isTBD ? 'bg-slate-800/50 text-slate-600 border-slate-700/50 border-dashed' :
-                    'bg-slate-800 text-slate-400 border-slate-700 group-hover/player:border-slate-600'
+                    'bg-slate-800 text-slate-400 border-slate-700'
                 }`}>
                     {player.avatarUrl && !isTBD ? (
-                        <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
+                        <Image source={{ uri: player.avatarUrl }} accessibilityLabel={player.name} className="w-full h-full object-cover" />
                     ) : (
-                        <span>{isTBD ? '-' : player.name ? player.name.charAt(0).toUpperCase() : '?'}</span>
+                        <Text>{isTBD ? '-' : player.name ? player.name.charAt(0).toUpperCase() : '?'}</Text>
                     )}
-                </div>
-                <span className={`text-sm font-medium truncate transition-colors ${isWinner ? 'text-emerald-400' : isLoser ? 'text-slate-500' : isTBD ? 'text-slate-600 italic' : 'text-slate-200 group-hover/player:text-white'}`}>
+                </View>
+                <Text className={`text-sm font-medium truncate transition-colors ${isWinner ? 'text-emerald-400' : isLoser ? 'text-slate-500' : isTBD ? 'text-slate-600 italic' : 'text-slate-200'}`}>
                     {player.name}
-                </span>
-            </div>
+                </Text>
+            </View>
             {!isTBD && (
-                <span className={`font-mono font-bold text-sm ml-2 ${isWinner ? 'text-emerald-400' : 'text-slate-600'}`}>
+                <Text className={`font-mono font-bold text-sm ml-2 ${isWinner ? 'text-emerald-400' : 'text-slate-600'}`}>
                     {player.score ?? '-'}
-                </span>
+                </Text>
             )}
-        </div>
+        </View>
     );
 };
 
 const MatchCard: React.FC<{ match: Match, onClick: () => void }> = ({ match, onClick }) => (
-    <div 
-        onClick={onClick}
+    <Pressable 
+        onPress={onClick}
         className={`bg-slate-900 border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:border-violet-500/50 cursor-pointer relative z-20 w-72 md:w-80 flex-shrink-0 group ${
         match.status === 'Live' ? 'border-violet-500 shadow-lg shadow-violet-900/20' : 'border-slate-800'
     }`}>
-        <div className="px-4 py-2 bg-black/20 border-b border-slate-800/50 flex justify-between items-center group-hover:bg-violet-600/10 transition-colors">
-            <span className="text-[10px] text-slate-500 font-mono group-hover:text-violet-400">#{match.id.slice(-4)}</span>
-            <div className={`text-[10px] font-bold uppercase ${match.status === 'Live' ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>
-                {match.status === 'Completed' ? 'Final' : match.status === 'Live' ? 'LIVE' : format(new Date(match.date), 'h:mm a')}
-            </div>
-        </div>
-        <div className="p-3 space-y-1">
+        <View className="px-4 py-2 bg-black/20 border-b border-slate-800/50 flex-row justify-between items-center group-hover:bg-violet-600/10 transition-colors">
+            <Text className="text-[10px] text-slate-500 font-mono group-hover:text-violet-400">#{match.id.slice(-4)}</Text>
+            <View className={`text-[10px] font-bold uppercase ${match.status === 'Live' ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>
+                <Text>{match.status === 'Completed' ? 'Final' : match.status === 'Live' ? 'LIVE' : format(new Date(match.date), 'h:mm a')}</Text>
+            </View>
+        </View>
+        <View className="p-3 space-y-1">
             <BracketPlayer player={match.player1} winnerId={match.winnerId} />
-            <div className="h-px bg-slate-800/50 mx-2" />
+            <View className="h-px bg-slate-800/50 mx-2" />
             <BracketPlayer player={match.player2} winnerId={match.winnerId} />
-        </div>
-    </div>
+        </View>
+    </Pressable>
 );
 
 const MatchDetailModal: React.FC<{ match: Match, onClose: () => void }> = ({ match, onClose }) => {
@@ -299,8 +302,9 @@ const CheckoutModal: React.FC<{
 // --- MAIN COMPONENT ---
 
 export default function TournamentDetails() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const id = route.params?.id as string;
   const { tournaments, matches, user, registerForTournament, leaveTournament, calculateLevel, openDirectMessage } = useAppStore();
   
   const [activeTab, setActiveTab] = useState<'bracket' | 'announcements' | 'participants'>('bracket');
@@ -311,7 +315,7 @@ export default function TournamentDetails() {
   const tournament = tournaments.find(t => t.id === id);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(() => tournament?.games[0]?.id || null);
   
-  if (!tournament || !user) return <div className="p-10 text-center">Loading...</div>;
+  if (!tournament || !user) return <View className="p-10 items-center"><Text className="text-white">Loading...</Text></View>;
 
   const activeGame = tournament.games.find(g => g.id === selectedGameId);
   const gameMatches = matches.filter(m => m.tournamentId === tournament.id && m.gameId === selectedGameId);
@@ -325,15 +329,23 @@ export default function TournamentDetails() {
 
 
   const handleLeaveTournament = async () => {
-    if (!window.confirm("Confirm withdrawal? Your slot will be immediately reopened.")) return;
-    setIsLeaving(true);
-    try {
-        await leaveTournament(tournament.id);
-    } catch (err) {
-        console.error(err);
-    } finally {
-        setIsLeaving(false);
-    }
+    Alert.alert(
+      'Confirm withdrawal?',
+      'Your slot will be immediately reopened.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes', onPress: async () => {
+            setIsLeaving(true);
+            try {
+                await leaveTournament(tournament.id);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsLeaving(false);
+            }
+        } }
+      ]
+    );
   };
 
   const matchesByRound = useMemo(() => {
@@ -349,7 +361,8 @@ export default function TournamentDetails() {
   const selectedMatch = matches.find(m => m.id === selectedMatchId);
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-enter pb-20">
+    <ScrollView className="flex-1 bg-[#020617] space-y-6 md:space-y-8 pb-20">
+      <BlurHeader title={tournament.title} right={<TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Notifications' as any)}><Text style={{color:'#fff'}}>🔔</Text></TouchableOpacity>} />
       {showCheckout && (
           <CheckoutModal 
             tournament={tournament} 
@@ -385,18 +398,33 @@ export default function TournamentDetails() {
                             <Lock className="w-4 h-4 mr-2" /> Locked
                         </button>
                     ) : isRegisteredInAnyGame ? (
-                        <button 
-                            onClick={handleLeaveTournament}
+                        <TouchableOpacity
+                            onPress={handleLeaveTournament}
                             disabled={isLeaving}
+                            activeOpacity={0.85}
                             className={`px-8 py-3 rounded-2xl font-bold shadow-2xl transition-all flex items-center text-xs uppercase tracking-widest ${isLeaving ? 'bg-slate-800 text-slate-500 opacity-50' : 'bg-slate-800 hover:bg-red-900/40 text-red-500 border border-red-500/20'}`}
                         >
                             {isLeaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
-                            Leave Tournament
-                        </button>
+                            <Text>Leave Tournament</Text>
+                        </TouchableOpacity>
                     ) : (
-                        <button onClick={() => setShowCheckout(true)} className="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold shadow-2xl flex items-center text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95">
-                            <Zap className="w-4 h-4 mr-2" /> Register Now
-                        </button>
+                        <TouchableOpacity onPress={() => {
+                            if (!user) {
+                                Alert.alert(
+                                    'Sign up required',
+                                    'Please create an account to register for tournaments.',
+                                    [
+                                        { text: 'Cancel', style: 'cancel' },
+                                        { text: 'Sign Up', onPress: () => navigation.navigate('Auth' as any) }
+                                    ]
+                                );
+                            } else {
+                                setShowCheckout(true);
+                            }
+                        }} activeOpacity={0.85} className="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold shadow-2xl flex items-center text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95">
+                            <Zap className="w-4 h-4 mr-2" />
+                            <Text>Register Now</Text>
+                        </TouchableOpacity>
                     )}
                 </div>
             </div>
@@ -406,9 +434,9 @@ export default function TournamentDetails() {
       <div className="space-y-6">
             <div className="flex flex-col gap-4 border-b border-slate-800 pb-4">
                 <div className="flex gap-6 min-w-max">
-                    <button onClick={() => setActiveTab('bracket')} className={`pb-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'bracket' ? 'border-violet-500 text-white' : 'border-transparent text-slate-500'}`}>Arena</button>
-                    <button onClick={() => setActiveTab('participants')} className={`pb-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'participants' ? 'border-violet-500 text-white' : 'border-transparent text-slate-500'}`}>Players</button>
-                    <button onClick={() => setActiveTab('announcements')} className={`pb-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'announcements' ? 'border-violet-500 text-white' : 'border-transparent text-slate-500'}`}>Announcements</button>
+                    <TouchableOpacity onPress={() => setActiveTab('bracket')} activeOpacity={0.85} className={`pb-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'bracket' ? 'border-violet-500 text-white' : 'border-transparent text-slate-500'}`}><Text>Arena</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setActiveTab('participants')} activeOpacity={0.85} className={`pb-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'participants' ? 'border-violet-500 text-white' : 'border-transparent text-slate-500'}`}><Text>Players</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setActiveTab('announcements')} activeOpacity={0.85} className={`pb-2 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'announcements' ? 'border-violet-500 text-white' : 'border-transparent text-slate-500'}`}><Text>Announcements</Text></TouchableOpacity>
                 </div>
                 <div className="flex bg-slate-950 border border-slate-800 rounded-xl p-1 w-fit">
                     {tournament.games.map(g => (
@@ -422,45 +450,65 @@ export default function TournamentDetails() {
             {activeTab === 'bracket' && (
                 <div className="min-h-[400px] overflow-x-auto custom-scrollbar pb-10">
                     {gameMatches.length === 0 ? (
-                        <div className="text-center py-20 opacity-30"><LayoutGrid className="w-12 h-12 mx-auto mb-4" /><p className="text-xs uppercase font-bold">Awaiting Brackets</p></div>
+                        <View className="text-center py-20 opacity-30"><LayoutGrid className="w-12 h-12 mx-auto mb-4" /><Text className="text-xs uppercase font-bold">Awaiting Brackets</Text></View>
                     ) : (
-                        <div className="flex gap-16 min-w-max px-4">
-                            {activeRounds.map((round) => (
-                                <div key={round} className="space-y-8 min-w-[300px]">
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-['Rajdhani'] border-b border-slate-800/50 pb-2">{round}</h3>
-                                    <div className="flex flex-col gap-10 justify-around h-full">
-                                        {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} onClick={() => setSelectedMatchId(m.id)} />)}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <FlatList
+                          data={activeRounds}
+                          horizontal
+                          keyExtractor={(item) => item}
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}
+                          renderItem={({ item: round }) => (
+                            <View key={round} className="space-y-8 min-w-[300px]">
+                              <Text className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-['Rajdhani'] border-b border-slate-800/50 pb-2">{round}</Text>
+                              <FlatList
+                                data={matchesByRound[round]}
+                                keyExtractor={(m) => m.id}
+                                renderItem={({ item: m }) => <MatchCard match={m} onClick={() => setSelectedMatchId(m.id)} />}
+                                showsVerticalScrollIndicator={false}
+                                style={{ marginTop: 8 }}
+                              />
+                            </View>
+                          )}
+                        />
                     )}
                 </div>
             )}
 
             {activeTab === 'participants' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tournament.registeredPlayers.filter(p => p.gameIds.includes(selectedGameId || '')).map(player => (
-                        <div key={player.id} className="flex items-center justify-between p-5 bg-slate-900 border border-slate-800 rounded-3xl">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-slate-400">{player.gamertag?.substring(0,2).toUpperCase()}</div>
-                                <span className="font-bold text-white uppercase text-sm">{player.gamertag}</span>
-                            </div>
-                            {player.id === user.id && <span className="bg-violet-600 text-[8px] px-2 py-1 rounded font-black text-white">YOU</span>}
-                        </div>
-                    ))}
-                </div>
+                <FlatList
+                  data={tournament.registeredPlayers.filter(p => p.gameIds.includes(selectedGameId || ''))}
+                  keyExtractor={(item) => item.id}
+                  numColumns={3}
+                  renderItem={({ item: player }) => (
+                    <View key={player.id} className="flex-1 m-2 bg-slate-900 border border-slate-800 rounded-3xl p-5">
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-row items-center gap-4">
+                                <View className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-slate-400">{player.gamertag?.substring(0,2).toUpperCase()}</View>
+                                <Text className="font-bold text-white uppercase text-sm">{player.gamertag}</Text>
+                            </View>
+                            {player.id === user.id && <Text className="bg-violet-600 text-[8px] px-2 py-1 rounded font-black text-white">YOU</Text>}
+                        </View>
+                    </View>
+                  )}
+                />
             )}
 
             {activeTab === 'announcements' && (
-                <div className="space-y-4 max-w-2xl">
-                    {tournament.announcements.length === 0 ? <p className="text-slate-600 text-center py-10 italic">No announcements.</p> : tournament.announcements.map(a => (
-                        <div key={a.id} className="p-6 bg-slate-900/80 border border-slate-800 rounded-3xl flex gap-4">
-                            <Megaphone className="w-5 h-5 text-violet-500 shrink-0" />
-                            <p className="text-sm text-slate-300">{a.message}</p>
-                        </div>
-                    ))}
-                </div>
+                <View className="space-y-4 max-w-2xl">
+                    {tournament.announcements.length === 0 ? <Text className="text-slate-600 text-center py-10 italic">No announcements.</Text> : (
+                        <FlatList
+                          data={tournament.announcements}
+                          keyExtractor={(a) => a.id}
+                          renderItem={({ item: a }) => (
+                            <View key={a.id} className="p-6 bg-slate-900/80 border border-slate-800 rounded-3xl flex-row gap-4">
+                                <Megaphone className="w-5 h-5 text-violet-500 shrink-0" />
+                                <Text className="text-sm text-slate-300">{a.message}</Text>
+                            </View>
+                          )}
+                        />
+                    )}
+                </View>
             )}
       </div>
 

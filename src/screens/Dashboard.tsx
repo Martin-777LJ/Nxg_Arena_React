@@ -1,122 +1,104 @@
-// src/components/WebCard.tsx
-import React from 'react';
-
-interface WebCardProps {
-  title: string;
-  description: string;
-  imageUrl?: string;
-  buttonText?: string;
-  onButtonClick?: () => void;
-}
-
-const WebCard: React.FC<WebCardProps> = ({
-  title,
-  description,
-  imageUrl,
-  buttonText,
-  onButtonClick,
-}) => {
-  return (
-    <div className="max-w-sm rounded overflow-hidden shadow-lg bg-white m-4">
-      {imageUrl && (
-        <img className="w-full h-48 object-cover" src={imageUrl} alt={title} />
-      )}
-      <div className="px-6 py-4">
-        <h2 className="font-bold text-xl mb-2 text-gray-800">{title}</h2>
-        <p className="text-gray-700 text-base">{description}</p>
-      </div>
-      {buttonText && onButtonClick && (
-        <div className="px-6 pt-4 pb-2">
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={onButtonClick}
-          >
-            {buttonText}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default WebCard;
-// src/components/NativeCard.tsx
-import React from 'react';
-import { View, Text, Image, Pressable } from 'react-native'; // Import React Native components
-
-// Ensure NativeWind is set up in your project (e.g., tailwind.config.js)
-// and that you've run `npx tailwindcss init -p` and configured it for React Native.
-
-interface NativeCardProps {
-  title: string;
-  description: string;
-  imageUrl?: string;
-  buttonText?: string;
-  onButtonClick?: () => void;
-}
-
-const NativeCard: React.FC<NativeCardProps> = ({
-  title,
-  description,
-  imageUrl,
-  buttonText,
-  onButtonClick,
-}) => {
-  return (
-    // Replaced div with View
-    <View className="max-w-sm rounded overflow-hidden shadow-lg bg-white m-4">
-      {imageUrl && (
-        // Replaced img with Image
-        // src becomes source={{ uri: '...' }} for network images
-        // For local images, it would be source={require('./path/to/image.png')}
-        // alt becomes accessibilityLabel
-        <Image
-          className="w-full h-48 object-cover" // NativeWind handles object-cover (resizeMode)
-          source={{ uri: imageUrl }}
-          accessibilityLabel={title}
-        />
-      )}
-      <View className="px-6 py-4">
-        {/* Replaced h2 with Text */}
-        <Text className="font-bold text-xl mb-2 text-gray-800">{title}</Text>
-        {/* Replaced p with Text */}
-        <Text className="text-gray-700 text-base">{description}</Text>
-      </View>
-      {buttonText && onButtonClick && (
-        <View className="px-6 pt-4 pb-2">
-          {/* Replaced button with Pressable */}
-          {/* onClick becomes onPress */}
-          {/* NativeWind handles hover/active states for Pressable */}
-          <Pressable
-            className="bg-blue-500 active:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onPress={onButtonClick}
-          >
-            {/* Button text also needs to be wrapped in Text */}
-            <Text className="text-white font-bold">{buttonText}</Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
-  );
-};
-
-export default NativeCard;
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../context';
-import { Calendar, Users, Trophy, Search, Sliders, ShieldCheck, Gamepad2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { Calendar, Users, Trophy, Search, Sliders, ShieldCheck, Gamepad2 } from 'lucide-react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Tournament, GameType, TournamentStatus } from '../types';
+import { RootStackParamList } from '../types/navigation';
+import { Modal, View, Text, TouchableOpacity, TextInput, FlatList, Image, StyleSheet, ScrollView } from 'react-native';
+import BlurHeader from '../components/BlurHeader';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#020617',
+  },
+  card: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  cardImage: {
+    height: 160,
+    backgroundColor: '#0f172a',
+    overflow: 'hidden',
+  },
+  cardContent: {
+    padding: 16,
+    flex: 1,
+    backgroundColor: '#0f172a',
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#7c3aed',
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  searchContainer: {
+    backgroundColor: '#0f172a',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  textInput: {
+    flex: 1,
+    color: '#fff',
+    marginLeft: 8,
+  },
+  noResultsContainer: {
+    padding: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noResultsText: {
+    color: '#94a3b8',
+    fontSize: 14,
+  },
+});
+
+// Simple date formatter utility
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const day = date.getDate();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+  const displayHours = date.getHours() % 12 || 12;
+  return `${month} ${day} • ${displayHours}:${minutes} ${ampm}`;
+};
 
 // --- COMPONENTS ---
 
 interface TournamentCardProps {
   tournament: Tournament;
-  style?: React.CSSProperties;
+  style?: any;
 }
 
 const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, style }) => {
-  const navigate = useNavigate();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user, getParticipantProfile } = useAppStore();
   
   const isRegistered = useMemo(() => 
@@ -128,118 +110,130 @@ const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, style }) =>
   const totalCapacity = tournament.games.reduce((acc, g) => acc + g.maxParticipants, 0);
 
   return (
-    <div 
-        onClick={() => navigate(`/tournament/${tournament.id}`)}
-        style={style}
-        className="group flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden cursor-pointer hover:border-violet-500/50 hover:shadow-2xl hover:shadow-violet-900/10 transition-all duration-500 relative h-full animate-enter"
+    <TouchableOpacity
+      onPress={() => navigation.navigate('TournamentDetails' as any, { id: tournament.id })}
+      style={[styles.card, style]}
+      activeOpacity={0.85}
     >
-        <div className="h-40 md:h-44 bg-slate-800 relative overflow-hidden flex-shrink-0">
-            {tournament.imageUrl ? (
-                <img 
-                    src={tournament.imageUrl} 
-                    alt={tournament.title} 
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                />
-            ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-950 group-hover:scale-105 transition-transform duration-700"></div>
+      <View style={styles.cardImage}>
+        {tournament.imageUrl ? (
+          <Image
+            source={{ uri: tournament.imageUrl }}
+            style={{ width: '100%', height: '100%' }}
+          />
+        ) : (
+          <View style={{ width: '100%', height: '100%', backgroundColor: '#1e293b' }} />
+        )}
+        <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+
+        <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', gap: 8 }}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{primaryGameType}</Text>
+          </View>
+          {isRegistered && (
+            <View style={[styles.badge, { backgroundColor: '#10b981' }]}>
+              <Text style={styles.badgeText}>Joined</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+          <Users size={12} color="#a78bfa" style={{ marginRight: 6 }} />
+          <Text style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#fff', fontSize: 12 }}>
+            {tournament.registeredPlayers.length}/{totalCapacity}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.cardContent}>
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#fff', marginBottom: 8 }}>
+            {tournament.title}
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, backgroundColor: '#0b1220', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' }}>
+          <Calendar size={12} color="#475569" style={{ marginRight: 6 }} />
+          <Text style={{ color: '#94a3b8', fontSize: 10 }}>
+            {formatDate(tournament.date)}
+          </Text>
+        </View>
+
+        <View style={{ marginTop: 'auto', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+          <View>
+            <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>Prize Pool</Text>
+            <Text style={{ color: '#10b981', fontWeight: 'bold', fontFamily: 'monospace', fontSize: 16 }}>
+              {tournament.prizePool}
+            </Text>
+          </View>
+
+          <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, borderWidth: 1, flexDirection: 'row', alignItems: 'center', borderColor: tournament.status === TournamentStatus.ONGOING ? '#ef4444' : tournament.status === TournamentStatus.COMPLETED ? '#475569' : '#3b82f6' }}>
+            {tournament.status === TournamentStatus.ONGOING && (
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ef4444', marginRight: 6 }} />
             )}
-            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors"></div>
-            
-            <div className="absolute bottom-3 left-3 flex gap-2">
-                <span className="px-2 py-1 bg-violet-600/90 backdrop-blur-md border border-violet-500/40 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-xl">
-                    {primaryGameType}
-                </span>
-                {isRegistered && (
-                    <span className="px-2 py-1 bg-emerald-600/90 backdrop-blur-md border border-emerald-500/40 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-xl">
-                        Joined
-                    </span>
-                )}
-            </div>
-            
-            <div className="absolute top-3 right-3 flex items-center bg-black/60 px-2 py-1 rounded-xl text-xs text-slate-200 backdrop-blur-xl border border-white/10 shadow-2xl">
-                <Users className="w-3 h-3 mr-1.5 text-violet-400" />
-                <span className="font-mono font-bold">{tournament.registeredPlayers.length}/{totalCapacity}</span>
-            </div>
-        </div>
-
-        <div className="p-4 flex-1 flex flex-col bg-slate-900 transition-colors border-t border-slate-800/50">
-            <div className="flex justify-between items-start mb-3 gap-4">
-                <h3 className="font-bold text-lg text-white group-hover:text-violet-400 transition-colors line-clamp-1 font-['Rajdhani']">
-                    {tournament.title}
-                </h3>
-            </div>
-            
-            <div className="flex items-center text-[10px] text-slate-400 mb-4 font-mono bg-slate-950/50 w-fit px-2 py-1 rounded-lg border border-slate-800">
-                <Calendar className="w-3 h-3 mr-2 text-slate-600" />
-                {format(new Date(tournament.date), 'MMM d • h:mm a')}
-            </div>
-
-            <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-800/80">
-                <div className="space-y-0.5">
-                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Prize Pool</p>
-                     <p className="text-emerald-400 font-bold font-mono text-base leading-none">{tournament.prizePool}</p>
-                </div>
-                
-                <div className={`px-2 py-1 rounded-xl text-[9px] uppercase font-bold tracking-widest border flex items-center shadow-lg transition-all ${
-                    tournament.status === TournamentStatus.ONGOING ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
-                    tournament.status === TournamentStatus.COMPLETED ? 'bg-slate-800 text-slate-500 border-slate-700' :
-                    'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                }`}>
-                    {tournament.status === TournamentStatus.ONGOING && <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse" />}
-                    {tournament.status}
-                </div>
-            </div>
-        </div>
-    </div>
+            <Text style={{ fontSize: 9, fontWeight: 'bold', color: tournament.status === TournamentStatus.ONGOING ? '#ef4444' : tournament.status === TournamentStatus.COMPLETED ? '#64748b' : '#60a5fa' }}>
+              {tournament.status}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
-// --- LOADING SCREEN COMPONENT (Updated CSS for Centering) ---
+// --- LOADING SCREEN COMPONENT ---
 const GameLoadingScreen = ({ progress, loadingText }: { progress: number, loadingText: string }) => (
-    <div className="fixed top-0 left-0 w-full h-[100dvh] z-[100] bg-slate-950 flex flex-col items-center justify-center p-6 overscroll-none">
-        <div className="w-full max-w-md space-y-8 text-center flex flex-col items-center justify-center">
+    <View style={{ flex: 1, backgroundColor: '#0b1220', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+        <View style={{ width: '100%', maxWidth: 320, gap: 32, justifyContent: 'center', alignItems: 'center' }}>
             {/* Logo or Icon */}
-            <div className="relative inline-block">
-                <div className="absolute inset-0 bg-violet-600 blur-2xl opacity-20 animate-pulse"></div>
-                                
-                <h1 className="text-3xl font-black text-white uppercase tracking-widest font-['Rajdhani']">
+            <View style={{ position: 'relative' }}>
+                <View style={{ position: 'absolute', inset: 0, backgroundColor: '#7c3aed', opacity: 0.2, borderRadius: 50 }} />
+                <Text style={{ fontSize: 28, fontWeight: '900', color: '#fff', textTransform: 'uppercase', letterSpacing: 2 }}>
                     WELCOME
-                </h1>
-            </div>
+                </Text>
+            </View>
 
             {/* Progress Bar Container */}
-            <div className="space-y-2 w-full">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-500">
-                    <span>{loadingText}</span>
-                    <span className="text-violet-400">{Math.round(progress)}%</span>
-                </div>
+            <View style={{ width: '100%', gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, color: '#64748b' }}>
+                        {loadingText}
+                    </Text>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, color: '#7c3aed' }}>
+                        {Math.round(progress)}%
+                    </Text>
+                </View>
                 
-                <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-                    <div 
-                        className="h-full bg-gradient-to-r from-violet-600 via-purple-500 to-indigo-500 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(139,92,246,0.5)]"
-                        style={{ width: `${progress}%` }}
+                <View style={{ height: 8, width: '100%', backgroundColor: '#0f172a', borderRadius: 9999, overflow: 'hidden', borderWidth: 1, borderColor: '#1e293b' }}>
+                    <View 
+                        style={{ 
+                            height: '100%',
+                            backgroundColor: '#7c3aed',
+                            width: `${progress}%`,
+                        }}
                     />
-                </div>
-            </div>
+                </View>
+            </View>
 
             {/* Tips / Flavor Text */}
-            <p className="text-[10px] text-slate-600 font-mono animate-pulse">
+            <Text style={{ fontSize: 10, color: '#475569', fontFamily: 'monospace' }}>
                 LOADING...
-            </p>
-        </div>
-    </div>
+            </Text>
+        </View>
+    </View>
 );
 
 // --- MAIN DASHBOARD ---
 
 export default function Dashboard() {
-  const { tournaments, isLoading } = useAppStore();
-  const navigate = useNavigate();
+  const { tournaments, isLoading, user, signOut } = useAppStore();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [gameFilter, setGameFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
 
   // Loading State
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -296,7 +290,7 @@ export default function Dashboard() {
   const filteredTournaments = useMemo(() => {
     return tournaments.filter(t => {
         const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesGame = gameFilter === 'All' || t.games.some(g => g.type === gameFilter);
+        const matchesGame = gameFilter === 'All' || t.games.some((g: any) => g.type === gameFilter);
         const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
         const isNotFeatured = !featuredTournament || t.id !== featuredTournament.id;
         return matchesSearch && matchesGame && matchesStatus && isNotFeatured;
@@ -309,118 +303,172 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="animate-enter">
-      {/* Header & Search */}
-      <div className="flex flex-col gap-6 mb-6 md:mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-                <Trophy className="w-6 h-6 md:w-7 md:h-7 text-violet-500" />
-                <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight font-['Rajdhani']">Discover Tournaments</h1>
-            </div>
-            
-            <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-2.5 rounded-xl border font-medium text-sm flex items-center justify-center transition-all ${showFilters ? 'bg-violet-600 border-violet-500 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-400'}`}
+    <View style={styles.container}>
+      <BlurHeader title="Discover Tournaments" right={<TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Notifications' as any)}><Text style={{color:'#fff'}}>🔔</Text></TouchableOpacity>} />
+      
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Header & Search */}
+        <View style={styles.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Trophy size={28} color="#a78bfa" />
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>Discover Tournaments</Text>
+          </View>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity 
+              onPress={() => setShowFilters(!showFilters)} 
+              activeOpacity={0.85} 
+              style={{ 
+                paddingHorizontal: 16, 
+                paddingVertical: 10, 
+                borderRadius: 12, 
+                borderWidth: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: showFilters ? '#7c3aed' : '#1e293b',
+                borderColor: showFilters ? '#7c3aed' : '#334155'
+              }}
             >
-                <Sliders className="w-4 h-4 mr-2" /> Filters
-            </button>
-          </div>
+              <Sliders size={16} color={showFilters ? '#fff' : '#94a3b8'} style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: showFilters ? '#fff' : '#94a3b8' }}>Filters</Text>
+            </TouchableOpacity>
 
-          <div className="relative">
-              <div className="relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 shadow-xl">
-                  <Search className="w-5 h-5 text-slate-500 mr-3" />
-                  <input 
-                      type="text" 
-                      placeholder="Search tournaments..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-transparent border-none outline-none text-white w-full placeholder-slate-600 text-sm"
-                  />
-              </div>
-          </div>
-      </div>
-
-      {showFilters && (
-          <div className="mb-8 p-4 bg-slate-900 border border-slate-800 rounded-2xl animate-enter">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <select 
-                    value={gameFilter}
-                    onChange={(e) => setGameFilter(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white outline-none"
-                  >
-                      <option value="All">All Games</option>
-                      {Object.values(GameType).map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                  <select 
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white outline-none"
-                  >
-                      <option value="All">All Statuses</option>
-                      {Object.values(TournamentStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-              </div>
-          </div>
-      )}
-
-      {/* DYNAMIC HERO SECTION */}
-      {!searchQuery && !showFilters && featuredTournament ? (
-        <div 
-            onClick={() => navigate(`/tournament/${featuredTournament.id}`)}
-            className="mb-8 relative group cursor-pointer overflow-hidden rounded-[2rem] border border-slate-800"
-        >
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-900/90 to-indigo-900/90 mix-blend-multiply z-10"></div>
-            {featuredTournament.imageUrl ? (
-                <img src={featuredTournament.imageUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
+            {/* User area */}
+            { !user ? (
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Auth' as any)} 
+                activeOpacity={0.85} 
+                style={{ paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#7c3aed', borderRadius: 8 }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#fff' }}>Sign Up</Text>
+              </TouchableOpacity>
             ) : (
-                <div className="absolute inset-0 bg-slate-800 group-hover:scale-105 transition-transform duration-1000"></div>
+              <>
+                <TouchableOpacity 
+                  onPress={() => setShowAccountMenu(true)} 
+                  activeOpacity={0.85} 
+                  style={{ paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155', borderRadius: 8 }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#fff' }}>{user?.gamertag}</Text>
+                </TouchableOpacity>
+
+                <Modal transparent visible={showAccountMenu} animationType="fade">
+                  <TouchableOpacity 
+                    style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'rgba(0,0,0,0.4)'}} 
+                    onPress={() => setShowAccountMenu(false)} 
+                    activeOpacity={0.85}
+                  >
+                    <View style={{backgroundColor:'#0b1220',padding:16,borderRadius:12,minWidth:200}}>
+                      <TouchableOpacity onPress={() => { setShowAccountMenu(false); navigation.navigate('Profile' as any); }} activeOpacity={0.85} style={{paddingVertical:8}}>
+                        <Text style={{color:'#fff'}}>Profile</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setShowAccountMenu(false); signOut(); }} activeOpacity={0.85} style={{paddingVertical:8}}>
+                        <Text style={{color:'#ef4444'}}>Logout</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              </>
             )}
-            
-            <div className="relative z-20 p-6 md:p-10 flex flex-col justify-between h-full gap-6">
-                <div>
-                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px] font-bold uppercase tracking-widest mb-4">
-                        <Trophy className="w-3 h-3 mr-2" /> Featured Event
-                    </div>
-                    <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight font-['Rajdhani'] leading-none">
-                        {featuredTournament.title}
-                    </h2>
-                </div>
-                
-                <div className="flex items-end justify-between">
-                    <button className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors shadow-xl">
-                        Join Now
-                    </button>
-                    <div className="text-right hidden md:block">
-                        <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">Prize Pool</p>
-                        <p className="text-3xl font-black text-emerald-400 font-mono">{featuredTournament.prizePool}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-      ) : !searchQuery && !showFilters && (
-        <div className="mb-8 p-12 text-center border border-slate-800 border-dashed rounded-[2rem] bg-slate-900/30">
-            <Trophy className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">No Active Tournaments</h2>
-            <p className="text-slate-500 text-sm">Be the first to create one!</p>
-        </div>
-      )}
+          </View>
+        </View>
 
-      {/* TOURNAMENT GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {filteredTournaments.map((tournament, idx) => (
-            <TournamentCard 
-                key={tournament.id} 
-                tournament={tournament} 
-                style={{ animationDelay: `${idx * 100}ms` }}
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+            <Search size={20} color="#64748b" />
+            <TextInput
+              placeholder="Search tournaments..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#64748b"
+              style={styles.textInput}
             />
-        ))}
-      </div>
+        </View>
 
-      {filteredTournaments.length === 0 && searchQuery && (
-          <div className="text-center py-12">
-              <p className="text-slate-500 text-sm">No tournaments found matching "{searchQuery}"</p>
-          </div>
-      )}
-    </div>
+        {/* Filters */}
+        {showFilters && (
+          <View style={{ marginBottom: 32, marginHorizontal: 16, padding: 16, backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155', borderRadius: 16 }}>
+              <View style={{ gap: 16 }}>
+                  <TouchableOpacity 
+                    style={{ width: '100%', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#334155', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 }}
+                  >
+                      <Text style={{ color: '#fff', fontSize: 14 }}>{gameFilter}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={{ width: '100%', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#334155', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 }}
+                  >
+                      <Text style={{ color: '#fff', fontSize: 14 }}>{statusFilter}</Text>
+                  </TouchableOpacity>
+              </View>
+          </View>
+        )}
+
+        {/* FEATURED TOURNAMENT */}
+        {!searchQuery && !showFilters && featuredTournament ? (
+          <TouchableOpacity
+              onPress={() => navigation.navigate('TournamentDetails' as any, { id: featuredTournament.id })}
+              activeOpacity={0.85}
+              style={{ marginHorizontal: 16, marginBottom: 32, backgroundColor: '#7c3aed', borderRadius: 24, overflow: 'hidden' }}
+          >
+              <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(123, 58, 237, 0.9)' }} />
+              {featuredTournament.imageUrl ? (
+                  <Image source={{ uri: featuredTournament.imageUrl }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+              ) : (
+                  <View style={{ position: 'absolute', inset: 0, backgroundColor: '#1e293b' }} />
+              )}
+              
+              <View style={{ position: 'relative', paddingHorizontal: 24, paddingVertical: 40, justifyContent: 'space-between', minHeight: 300 }}>
+                  <View>
+                      <View style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(234, 179, 8, 0.2)', borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.3)', marginBottom: 16, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' }}>
+                          <Trophy size={12} color="#fbbf24" style={{ marginRight: 6 }} />
+                          <Text style={{ color: '#fbbf24', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>Featured Event</Text>
+                      </View>
+                      <Text style={{ fontSize: 32, fontWeight: '900', color: '#fff', textTransform: 'uppercase' }}>
+                          {featuredTournament.title}
+                      </Text>
+                  </View>
+                  
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                      <TouchableOpacity activeOpacity={0.85} style={{ paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#fff', borderRadius: 12 }}>
+                          <Text style={{ color: '#0b1220', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Join Now</Text>
+                      </TouchableOpacity>
+                      <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ color: '#cbd5e1', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 'bold', marginBottom: 4 }}>Prize Pool</Text>
+                          <Text style={{ fontSize: 28, fontWeight: '900', color: '#10b981', fontFamily: 'monospace' }}>{featuredTournament.prizePool}</Text>
+                      </View>
+                  </View>
+              </View>
+          </TouchableOpacity>
+        ) : !searchQuery && !showFilters && (
+          <View style={{ marginHorizontal: 16, marginBottom: 32, paddingVertical: 48, paddingHorizontal: 48, borderWidth: 1, borderColor: '#334155', borderStyle: 'dashed', borderRadius: 32, backgroundColor: 'rgba(30, 41, 59, 0.3)', justifyContent: 'center', alignItems: 'center' }}>
+              <Trophy size={48} color="#64748b" style={{ marginBottom: 16 }} />
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 8 }}>No Active Tournaments</Text>
+              <Text style={{ color: '#64748b', fontSize: 14 }}>Be the first to create one!</Text>
+          </View>
+        )}
+
+        {/* TOURNAMENT GRID */}
+        <View style={{ paddingHorizontal: 16 }}>
+          <FlatList
+            data={filteredTournaments}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            renderItem={({ item, index }) => (
+              <TournamentCard 
+                tournament={item} 
+                style={{ flex: 1, marginRight: index % 2 === 0 ? 8 : 0, marginBottom: 16 }}
+              />
+            )}
+            scrollEnabled={false}
+          />
+        </View>
+
+        {filteredTournaments.length === 0 && searchQuery && (
+          <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>No tournaments found matching "{searchQuery}"</Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }

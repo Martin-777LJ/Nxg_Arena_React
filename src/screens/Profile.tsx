@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { useNavigation } from '@react-navigation/native'; // For navigation.navigate
 import { ShieldCheck } from '@tamagui/lucide-icons'; // Or your preferred icon library (e.g., 'lucide-react-native', 'react-native-vector-icons')
 
@@ -190,7 +191,7 @@ const WebCard: React.FC<WebCardProps> = ({
 export default WebCard;
 // src/components/NativeCard.tsx
 import React from 'react';
-import { View, Text, Image, Pressable } from 'react-native'; // Import React Native components
+import { View, Text, Image, TouchableOpacity } from 'react-native'; // Import React Native components
 
 // Ensure NativeWind is set up in your project (e.g., tailwind.config.js)
 // and that you've run `npx tailwindcss init -p` and configured it for React Native.
@@ -414,7 +415,7 @@ export default function Profile() {
                 <h3 className="font-bold text-white text-lg mb-4">Referral Code</h3>
                 <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 flex items-center justify-between">
                     <code className="text-violet-400 font-mono font-bold text-xl">{user.referralCode || 'N/A'}</code>
-                    <button onClick={() => { navigator.clipboard.writeText(user.referralCode); }} className="p-2 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => { Clipboard.setString(user.referralCode); }} className="p-2 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors">
                         <Copy className="w-5 h-5" />
                     </button>
                 </div>

@@ -104,6 +104,8 @@ export default NativeCard;
 import React from 'react';
 import { useAppStore } from '../context';
 import { ShoppingBag, Zap, Shield, Star, Crown, ChevronRight, Check, CheckCircle } from 'lucide-react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import BlurHeader from '../components/BlurHeader';
 
 export default function StoreView() {
   const { user, buyStoreItem } = useAppStore();
@@ -121,7 +123,10 @@ export default function StoreView() {
   const isProOrganizer = user.organizerTier === 'pro';
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-20 animate-enter">
+    <View className="flex-1 bg-[#020617]">
+      <BlurHeader title="Item Store" />
+      <ScrollView contentContainerStyle={{ paddingTop: 72 }}>
+        <View className="max-w-5xl mx-auto space-y-12 pb-20 animate-enter w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
               <h1 className="text-3xl font-bold text-white flex items-center font-['Rajdhani'] uppercase tracking-wider">
@@ -160,14 +165,15 @@ export default function StoreView() {
                       <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">Monthly Subscription</p>
                       <p className="text-4xl font-black text-white font-mono mb-6">$19.99</p>
                       {isProOrganizer ? (
-                          <button disabled className="w-full px-8 py-3 bg-slate-800 text-slate-500 rounded-xl font-bold text-xs uppercase tracking-widest cursor-default">Plan Active</button>
+                          <View className="w-full px-8 py-3 bg-slate-800 text-slate-500 rounded-xl font-bold text-xs uppercase tracking-widest cursor-default items-center"><Text className="text-slate-500">Plan Active</Text></View>
                       ) : (
-                          <button 
-                            onClick={() => buyStoreItem('subscription', 'pro_tier', 19.99, 'Organizer Pro Pass')}
-                            className="w-full px-8 py-3 bg-orange-500 hover:bg-orange-400 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all"
+                          <TouchableOpacity 
+                            activeOpacity={0.85}
+                            onPress={() => buyStoreItem('subscription', 'pro_tier', 19.99, 'Organizer Pro Pass')}
+                            className="w-full px-8 py-3 bg-orange-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all items-center"
                           >
-                              Upgrade Now
-                          </button>
+                              <Text style={{color:'#fff',fontWeight:'800'}}>Upgrade Now</Text>
+                          </TouchableOpacity>
                       )}
                   </div>
               </div>
@@ -188,12 +194,9 @@ export default function StoreView() {
                       <p className={`text-3xl font-black font-mono my-2 ${pack.color}`}>+{pack.amount} XP</p>
                       <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-8">Instant Delivery</p>
                       
-                      <button 
-                        onClick={() => buyStoreItem('xp', pack.amount, pack.cost, pack.name)}
-                        className="w-full py-4 bg-slate-950 hover:bg-white hover:text-slate-900 text-white rounded-xl font-bold text-sm uppercase tracking-widest transition-all border border-slate-800 group-hover:border-transparent"
-                      >
-                          Purchase ${pack.cost}
-                      </button>
+                      <TouchableOpacity activeOpacity={0.85} onPress={() => buyStoreItem('xp', pack.amount, pack.cost, pack.name)} className="w-full py-4 bg-slate-950 text-white rounded-xl font-bold text-sm uppercase tracking-widest transition-all border border-slate-800 items-center">
+                          <Text style={{color:'#fff',fontWeight:'800'}}>Purchase ${pack.cost}</Text>
+                      </TouchableOpacity>
                   </div>
               ))}
           </div>
@@ -219,12 +222,9 @@ export default function StoreView() {
                                     <Check className="w-4 h-4 mr-2" /> Owned
                                 </button>
                             ) : (
-                                <button 
-                                    onClick={() => buyStoreItem('badge', badge.id, badge.cost, badge.name)}
-                                    className="px-8 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-violet-900/20"
-                                >
-                                    Unlock for ${badge.cost}
-                                </button>
+                                <TouchableOpacity activeOpacity={0.85} onPress={() => buyStoreItem('badge', badge.id, badge.cost, badge.name)} className="px-8 py-3 bg-violet-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-violet-900/20 items-center">
+                                    <Text style={{color:'#fff',fontWeight:'800'}}>Unlock for ${badge.cost}</Text>
+                                </TouchableOpacity>
                             )}
                         </div>
                     </div>

@@ -42,7 +42,7 @@ const WebCard: React.FC<WebCardProps> = ({
 export default WebCard;
 // src/components/NativeCard.tsx
 import React from 'react';
-import { View, Text, Image, Pressable } from 'react-native'; // Import React Native components
+import { View, Text, Image, TouchableOpacity, Alert } from 'react-native'; // Import React Native components
 
 // Ensure NativeWind is set up in your project (e.g., tailwind.config.js)
 // and that you've run `npx tailwindcss init -p` and configured it for React Native.
@@ -103,12 +103,12 @@ const NativeCard: React.FC<NativeCardProps> = ({
 export default NativeCard;
 import React, { useState, useRef, useMemo } from 'react';
 import { useAppStore } from '../context';
-import * as ReactRouterDOM from 'react-router-dom';
+import { useNavigation } from '@react-navigation/native';
 import { Plus, Users, Calendar, Trophy, AlertTriangle, Edit, MapPin, Check, ArrowLeft, X, Save, Flag, Shuffle, ChevronRight, Settings, Info, CloudLightning, CheckCircle2, Image as ImageIcon, Camera, Sparkles, Loader2, DollarSign, Trash2, LayoutGrid, Edit3, ClipboardList, Sliders, Save as SaveIcon, PowerOff, ShieldAlert, MessageCircle, Lock, Crown } from 'lucide-react';
 import { GameType, Tournament, Match, TournamentStatus, TournamentGame } from '../types';
 import { format } from 'date-fns';
 
-const { useNavigate, Link } = ReactRouterDOM;
+
 
 const Toggle = ({ enabled, onChange }: { enabled: boolean, onChange: () => void }) => (
     <button 
@@ -122,7 +122,7 @@ const Toggle = ({ enabled, onChange }: { enabled: boolean, onChange: () => void 
 
 export default function Organizer() {
   const { user, tournaments, matches, createTournament, updateTournament, updateMatch, generateBracket } = useAppStore();
-  const navigate = useNavigate();
+  const navigation = useNavigation();
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [step, setStep] = useState<'form' | 'review'>('form');
@@ -236,7 +236,7 @@ export default function Organizer() {
 
   const generateAIBanner = async () => {
     if (!newTourney.title) {
-        alert("Enter a title first.");
+        Alert.alert("Enter a title first.");
         return;
     }
     setIsGeneratingImage(true);
@@ -270,7 +270,7 @@ export default function Organizer() {
 
   const handleFinalSubmit = () => {
     if (!editingId && isLimitReached) {
-        alert("Monthly limit reached. Please upgrade to Pro.");
+        Alert.alert("Monthly limit reached. Please upgrade to Pro.");
         return;
     }
 
@@ -325,7 +325,7 @@ export default function Organizer() {
     const updatedGames = t.games.map(g => g.id === gameId ? { ...g, status: TournamentStatus.COMPLETED } : g);
     updateTournament(tournamentId, { games: updatedGames });
     setManagingGame(null);
-    alert("Game finalized and marked as completed.");
+    Alert.alert('Game finalized', 'Game finalized and marked as completed.');
   };
 
   const activeManagementMatches = useMemo(() => {
@@ -358,9 +358,9 @@ export default function Organizer() {
                 </div>
             </div>
             {isBasicTier && (
-                <Link to="/store" className="ml-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all">
+                <button onClick={() => navigation.navigate('Store' as any)} className="ml-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all">
                     Upgrade
-                </Link>
+                </button>
             )}
         </div>
 
@@ -428,7 +428,7 @@ export default function Organizer() {
                                 ))}
                                 <div className="flex-1 flex justify-end gap-2">
                                     <button onClick={() => handleEdit(t)} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors"><Edit3 className="w-4 h-4" /></button>
-                                    <button onClick={() => navigate(`/tournament/${t.id}`)} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                                    <button onClick={() => navigation.navigate('TournamentDetails' as any, { id: t.id })} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors"><ChevronRight className="w-4 h-4" /></button>
                                 </div>
                             </div>
                         </div>
@@ -794,7 +794,14 @@ export default function Organizer() {
                               Close Management
                           </button>
                           <button 
-                            onClick={() => confirm("Finalize and close this game permanently?") && finalizeGameProtocol(managingGame!.tournamentId, managingGame!.gameId)}
+                            onClick={() => Alert.alert(
+                                'Finalize and close?',
+                                'This will permanently close the game. Continue?',
+                                [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { text: 'Yes', onPress: () => finalizeGameProtocol(managingGame!.tournamentId, managingGame!.gameId) }
+                                ]
+                            )}
                             className="flex-1 md:flex-none px-10 py-3 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-red-900/30 flex items-center justify-center transition-all active:scale-95"
                           >
                               <PowerOff className="w-4 h-4 mr-2" /> Finalize Game

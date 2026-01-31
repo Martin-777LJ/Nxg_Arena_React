@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // Use lucide-react-native for the native icons
 import { Trophy, Wallet, User, LayoutDashboard, MessageCircle } from 'lucide-react-native'; 
 
@@ -7,8 +8,13 @@ import Dashboard from '../screens/Dashboard';
 import WalletView from '../screens/Wallet';
 import Chat from '../screens/Chat';
 import Profile from '../screens/Profile';
+import Auth from '../screens/Auth';
+import TournamentDetails from '../screens/TournamentDetails';
+import Welcome from '../screens/Welcome';
+import Notifications from '../screens/Notifications';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 function HomeTabs() {
   return (
@@ -36,5 +42,17 @@ function HomeTabs() {
       <Tab.Screen name="Chat" component={Chat} />
       <Tab.Screen name="Profile" component={Profile} />
     </Tab.Navigator>
+  );
+}
+
+export default function RootNavigator() {
+  return (
+    <Stack.Navigator initialRouteName="Welcome">
+      <Stack.Screen name="Welcome" component={Welcome} options={{ headerShown: false }} />
+      <Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
+      <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="TournamentDetails" component={TournamentDetails} options={{ headerShown: false }} />
+      <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />
+    </Stack.Navigator>
   );
 }

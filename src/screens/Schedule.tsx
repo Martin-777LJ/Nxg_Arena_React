@@ -39,7 +39,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 export default ProductCard;
 // components/ProductCard.tsx (React Native)
 import React from 'react';
-import { View, Text, Image, Pressable } from 'react-native'; // Import React Native components
+import { View, Text, Image, Pressable, Alert } from 'react-native'; // Import React Native components
+import Clipboard from '@react-native-clipboard/clipboard';
 
 interface ProductCardProps {
   productName: string;
@@ -224,7 +225,7 @@ export default function Schedule() {
                                   <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mt-2">Initialize Match Lobby</p>
                               </button>
                               <button 
-                                onClick={() => alert("Waiting for Player A to initialize host protocol...")}
+                                onClick={() => Alert.alert("Waiting for Player A to initialize host protocol...")}
                                 className="p-8 bg-slate-800/50 border border-slate-700 rounded-[2rem] hover:border-emerald-500 hover:bg-emerald-600/5 transition-all text-center group"
                               >
                                   <div className="w-14 h-14 bg-emerald-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
@@ -273,8 +274,8 @@ export default function Schedule() {
                                       <span className="text-white font-mono font-black text-xl">{activeConnectionMatch.connection.hostGameTag}</span>
                                   </div>
                                   <button onClick={() => {
-                                      navigator.clipboard.writeText(activeConnectionMatch.connection!.hostGameTag!);
-                                      alert("Tag copied to clipboard!");
+                                      Clipboard.setString(activeConnectionMatch.connection!.hostGameTag!);
+                                      Alert.alert("Tag copied to clipboard!");
                                   }} className="p-3 bg-slate-900 hover:bg-slate-800 rounded-xl text-slate-500 hover:text-white transition-colors">
                                       <Copy className="w-5 h-5" />
                                   </button>
@@ -477,7 +478,14 @@ export default function Schedule() {
 
                                 {(match.status === 'Scheduled' || match.status === 'Live') && (
                                     <button 
-                                        onClick={() => confirm("Terminate deployment and forfeit points?") && forfeitMatch(match.id)}
+                                        onClick={() => Alert.alert(
+                                            'Confirm forfeit?',
+                                            'Terminate deployment and forfeit points?',
+                                            [
+                                                { text: 'Cancel', style: 'cancel' },
+                                                { text: 'Yes', onPress: () => forfeitMatch(match.id) }
+                                            ]
+                                        )}
                                         className="flex-1 sm:flex-none text-[10px] font-black uppercase tracking-[0.2em] text-red-500/70 hover:text-red-400 px-6 py-3.5 rounded-2xl transition-all hover:bg-red-500/5 flex items-center justify-center active:scale-95"
                                     >
                                         <Flag className="w-4 h-4 mr-3" /> Forfeit
